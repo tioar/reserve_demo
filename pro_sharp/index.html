@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>直角專業風｜預約月曆</title>
+<style>
+:root{
+  --bg:#f5f8fb; --card:#fff; --ink:#0e1a2b; --muted:#3d5572; --line:#e1e8f5;
+  --accent:#1f6feb; --accent-2:#eaf3ff;
+  --today:#2f3a4a; --today-ink:#fff;
+  --font:"Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font)}
+.wrap{max-width:1180px;margin:28px auto;padding:0 16px}
+.h1{font-weight:900;font-size:clamp(22px,3.2vw,32px);margin:6px 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(10,37,64,.08)}
+.header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.header .now{font-weight:900;color:#19407a}
+.header .btn{background:var(--accent-2);border:1px solid var(--accent);color:#19407a;padding:.5rem .8rem;border-radius:8px;font-weight:800}
+
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;padding:12px 16px}
+.wday{font-size:.88rem;color:var(--muted);text-align:center;font-weight:800}
+.day{border:1px solid var(--line);border-radius:8px;min-height:90px;background:#fff;display:flex;flex-direction:column;padding:8px;gap:6px}
+.day .d{font-weight:900}
+.day .meta{margin-top:auto;font-size:.86rem;color:#264a8a}
+.day:hover{outline:2px solid #c9dbff}
+.day.disabled{background:#f0f3f8;color:#8b97a8}
+.day.today{background:var(--today);color:var(--today-ink);border-color:#1f2937}
+.day.today .d{color:#fff}
+.badge{display:inline-block;padding:.15rem .4rem;border-radius:6px;border:1px solid #c9dbff;background:#eaf1ff;color:#1d3da6;font-weight:800;margin-right:4px}
+.meta .badge.warn{background:#fff0d8;color:#7a4d00;border-color:#ffd39c}
+.meta .badge.ok{background:#e9f6f1;color:#0f5132;border-color:#bfe9dc}
+
+#panel{display:none;border-top:1px solid var(--line);padding:12px 16px}
+.row{display:flex;align-items:center;gap:14px;border:1px dashed #cbd5e1;padding:10px;border-radius:8px;margin:8px 0}
+.row strong{font-weight:900}
+.row .remain{margin-left:auto;color:#334155}
+@media (max-width:680px){
+  .grid{gap:4px}
+  .day{min-height:76px}
+  .meta .badge{display:block;margin:2px 0 0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="h1">直角專業風｜預約月曆</div>
+
+  <div class="card">
+    <div class="header">
+      <span id="now" class="now"></span>
+      <button class="btn">開放預約日期規則</button>
+    </div>
+
+    <div class="grid" id="whead"></div>
+    <div class="grid" id="days"></div>
+    <div id="panel"></div>
+  </div>
+</div>
+
+<script>
+const W=['日','一','二','三','四','五','六'];
+function pad2(n){return String(n).padStart(2,'0')}
+function nowTxt(){const d=new Date();return `現在時間：${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())}（週${W[d.getDay()]}）`}
+document.getElementById('now').textContent=nowTxt();
+
+const $whead=document.getElementById('whead');$whead.innerHTML=W.map(w=>`<div class="wday">${w}</div>`).join('');
+const $days=document.getElementById('days'); const $panel=document.getElementById('panel');
+const base=new Date(); base.setDate(1);
+const todayKey=[new Date().getFullYear(),pad2(new Date().getMonth()+1),pad2(new Date().getDate())].join('-');
+
+function ymd(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
+function render(){
+  const first=new Date(base.getFullYear(),base.getMonth(),1);
+  const last=new Date(base.getFullYear(),base.getMonth()+1,0);
+  let html=''; for(let i=0;i<first.getDay();i++) html+=`<div></div>`;
+  for(let dd=1;dd<=last.getDate();dd++){
+    const cur=new Date(base.getFullYear(),base.getMonth(),dd);
+    const key=ymd(cur); const isToday=(key===todayKey);
+    const open = dd>=23 && dd<=27;
+    let meta='—', cls='day';
+    if(isToday) cls+=' today';
+    if(open){
+      meta = `
+        <span class="badge ok">早診 剩8</span>
+        <span class="badge warn">午診 剩10</span>
+        <span class="badge">晚診 剩9</span>`;
+    }else{ cls+=' disabled'; }
+    html += `<div class="${cls}" data-key="${key}"><div class="d">${dd}</div><div class="meta">${meta}</div></div>`;
+  }
+  $days.innerHTML=html;
+  $days.querySelectorAll('.day').forEach(el=>{
+    if(!el.classList.contains('disabled')){
+      el.addEventListener('click',()=>openDay(el.dataset.key));
+    }
+  });
+}
+function openDay(key){
+  const d=new Date(key); const wd=W[d.getDay()];
+  $panel.style.display='block';
+  $panel.innerHTML=`
+    <div class="row"><strong>${key}（週${wd}） 早診</strong><span>08:30~11:30</span><span class="remain">剩餘 8</span></div>
+    <div class="row"><strong>${key}（週${wd}） 午診</strong><span>14:00~17:00</span><span class="remain">剩餘 10</span></div>
+    <div class="row"><strong>${key}（週${wd}） 晚診</strong><span>18:00~20:30</span><span class="remain">剩餘 9</span></div>`;
+}
+render();
+</script>
+</body>
+</html>
