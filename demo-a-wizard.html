@@ -3,13 +3,12 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>線上預約（DEMO A：逐步精靈版）</title>
+<title>線上預約（DEMO A：逐步精靈＋全頁表單）</title>
 <style>
 :root{
   --brand:#5a37c6; --brand-600:#4a2fb0;
   --ink:#1a142b; --muted:#6f6a86;
   --bg:#f7f6fb; --card:#fff; --line:#ebe6fb;
-  --ok:#16a34a; --warn:#ca8a04;
   --green:#0d7a54; --blue:#1c52dd; --amber:#8a5a00; --pink:#9b197b;
 }
 *{box-sizing:border-box}
@@ -19,11 +18,15 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
 .h1{display:flex;align-items:center;gap:10px;font-weight:900;font-size:clamp(22px,4.6vw,30px);margin:6px 0 10px}
 .logo{width:40px;height:40px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:900}
 
-/* 步驟條 */
-.steps{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-.step{border-radius:999px;padding:.5rem 1rem;font-weight:900;border:1px solid #dcd5ff;background:#fff;color:#4b2ea9}
-.step.current{background:var(--brand);color:#fff;border-color:transparent}
+/* 步驟條（breadcrumb 風） */
+.steps{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.step{
+  border-radius:999px;padding:.5rem 1rem;font-weight:900;border:1px solid #dcd5ff;
+  background:#fff;color:#4b2ea9; cursor:pointer; user-select:none;
+}
+.step.current{background:var(--brand);color:#fff;border-color:transparent; cursor:default}
 .step.done{background:#e9edff;color:#2c3aa6;border-color:#cfd7fe}
+.step.disabled{opacity:.45;cursor:not-allowed}
 
 /* 版心：左側內容 + 右側摘要 */
 .board{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
@@ -79,20 +82,36 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
 .navbar .bar{display:flex;gap:10px;justify-content:flex-end; background:rgba(255,255,255,.6);backdrop-filter:blur(4px);
   border:1px solid var(--line);border-radius:14px;padding:10px}
 .navbar .bar .left{margin-right:auto}
+
+/* 全頁 Modal（表單） */
+.modal{position:fixed;inset:0;z-index:50;display:none}
+.modal.show{display:flex}
+.modal .mask{position:absolute;inset:0;background:rgba(0,0,0,.3);backdrop-filter:blur(2px)}
+.sheet{
+  position:relative; margin:auto; width:min(720px,96vw); max-height:90vh; overflow:auto;
+  background:#fff; border-radius:16px; border:1px solid #e7e1ff; box-shadow:0 24px 64px rgba(31,19,48,.25);
+}
+.sheet .hd{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #f0ecff}
+.sheet .bd{padding:14px}
+.sheet .title{font-weight:900}
+
+@media (max-width:900px){
+  .sheet{width:100vw;height:100vh;max-height:none;border-radius:0}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="h1"><div class="logo">＋</div> 線上預約（DEMO A：逐步精靈）</div>
+  <div class="h1"><div class="logo">＋</div> 線上預約（DEMO A：逐步精靈＋全頁表單）</div>
 
-  <!-- 步驟條 -->
+  <!-- 步驟條（可點擊返回/前進） -->
   <div class="steps" id="stepsBar"></div>
 
   <div class="board">
     <!-- 左側：步驟內容 -->
     <div id="stage"></div>
 
-    <!-- 右側：摘要與表單（表單只在第4步顯示） -->
+    <!-- 右側：摘要與表單（桌機可見；手機改用 modal） -->
     <div class="card summary" id="side">
       <div class="tt">預約資訊</div>
       <div class="kv"><div class="k">科別</div><div id="sDept">—</div></div>
@@ -108,7 +127,10 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
           <input id="idnum" class="input" maxlength="10" placeholder="身分證字號 *"/>
           <input id="phone" class="input" maxlength="10" inputmode="numeric" placeholder="聯絡電話 *"/>
           <label><input type="checkbox" id="agree"> 我已閱讀並同意預約須知</label>
-          <button class="btn btn-main" id="submit">送出預約</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-main" id="submit">送出預約</button>
+            <button class="btn btn-ghost" id="openFull">開啟全頁表單</button>
+          </div>
         </div>
       </div>
     </div>
@@ -124,8 +146,35 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
   </div>
 </div>
 
+<!-- 全頁表單 Modal -->
+<div class="modal" id="formModal" aria-hidden="true">
+  <div class="mask" id="modalMask"></div>
+  <div class="sheet">
+    <div class="hd">
+      <div class="title">填寫資料</div>
+      <button class="btn btn-ghost" id="closeModal">關閉</button>
+    </div>
+    <div class="bd">
+      <div class="card" style="margin-bottom:10px">
+        <div class="kv"><strong>科別</strong>：<span id="mDept">—</span></div>
+        <div class="kv"><strong>醫師</strong>：<span id="mDoc">—</span></div>
+        <div class="kv"><strong>日期</strong>：<span id="mDate">—</span></div>
+        <div class="kv"><strong>時段</strong>：<span id="mSlot">—</span></div>
+      </div>
+      <div class="form">
+        <input id="m_name" class="input" placeholder="姓名 *"/>
+        <input id="m_birthday" class="input" type="date" placeholder="出生年月日 *"/>
+        <input id="m_idnum" class="input" maxlength="10" placeholder="身分證字號 *"/>
+        <input id="m_phone" class="input" maxlength="10" inputmode="numeric" placeholder="聯絡電話 *"/>
+        <label><input type="checkbox" id="m_agree"> 我已閱讀並同意預約須知</label>
+        <button class="btn btn-main" id="m_submit">送出預約</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-/* ---------------- 假資料（可替換 API） ---------------- */
+/* ---------- 假資料（可替換 API） ---------- */
 const DEPTS=[{id:'ped',name:'小兒科'},{id:'fm',name:'家醫科'},{id:'der',name:'皮膚科'}];
 const DOCTORS=[{id:'cheng',name:'陳萬龍 醫師',dept:'fm'},
                {id:'tsai',name:'蔡怡君 醫師',dept:'ped'},
@@ -134,82 +183,103 @@ const SLOT_TYPES={early:'早診',noon:'午診',night:'晚診'};
 function pad2(n){return String(n).padStart(2,'0')}
 function ymd(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
 const W=['日','一','二','三','四','五','六'];
-
-/* 依醫師+日期回傳假時段 */
-function getSlots(date,docId){
-  const r=()=>Math.random();
-  const arr=[];
+function getSlots(date,docId){ // 假資料
+  const r=()=>Math.random(); const arr=[];
   if(r()<.7) arr.push({slot:'early',time:'08:30~11:30',remain:5+Math.floor(r()*6)});
   if(r()<.6) arr.push({slot:'noon', time:'14:00~17:00',remain:5+Math.floor(r()*6)});
   if(r()<.5) arr.push({slot:'night',time:'18:00~20:30',remain:5+Math.floor(r()*6)});
   return arr;
 }
-/* ----------------------------------------------------- */
+/* ----------------------------------------- */
 
-/* 狀態 */
-const state={
-  step:1,
-  dept:null, doc:null,
-  date:null, slot:null
-};
-
+const state={ step:1, dept:null, doc:null, date:null, slot:null };
 const $=s=>document.querySelector(s);
-const stage=$('#stage');
-const stepsBar=$('#stepsBar');
-const btnPrev=$('#prevBtn');
-const btnNext=$('#nextBtn');
-const hint=$('#hint');
 
-/* 顯示摘要 */
+const stage   = $('#stage');
+const stepsBar= $('#stepsBar');
+const btnPrev = $('#prevBtn');
+const btnNext = $('#nextBtn');
+const hint    = $('#hint');
+
 function refreshSummary(){
   $('#sDept').textContent = DEPTS.find(d=>d.id===state.dept)?.name || '—';
   $('#sDoc').textContent  = DOCTORS.find(d=>d.id===state.doc)?.name || '—';
   $('#sDate').textContent = state.date ? `${state.date}（週${W[new Date(state.date+'T09:00:00').getDay()]}）` : '—';
   $('#sSlot').textContent = state.slot ? `${SLOT_TYPES[state.slot.type]} ${state.slot.time}` : '—';
+
+  // modal 的摘要
+  $('#mDept').textContent = $('#sDept').textContent;
+  $('#mDoc').textContent  = $('#sDoc').textContent;
+  $('#mDate').textContent = $('#sDate').textContent;
+  $('#mSlot').textContent = $('#sSlot').textContent;
 }
 
-/* 步驟條 */
+function progress(){
+  const has1 = !!(state.dept && state.doc);
+  const has2 = !!state.date;
+  const has3 = !!state.slot;
+  return {has1,has2,has3};
+}
+
+/* 步驟條（可點擊） */
 function renderSteps(){
   const names=['選擇科別/醫師','選擇日期','選擇時段','填寫資料'];
+  const {has1,has2,has3}=progress();
+  const enable=[true, has1, has1&&has2, has1&&has2&&has3];
   stepsBar.innerHTML = names.map((n,i)=>{
     const idx=i+1;
-    const cls = idx<state.step ? 'step done' : (idx===state.step ? 'step current':'step');
-    return `<div class="${cls}">${idx} ${n}</div>`;
+    let cls='step';
+    if(idx<state.step) cls+=' done';
+    if(idx===state.step) cls+=' current';
+    if(!enable[i]) cls+=' disabled';
+    return `<div class="${cls}" data-step="${idx}">${idx} ${n}</div>`;
   }).join('');
+
+  stepsBar.querySelectorAll('.step').forEach(el=>{
+    const go=parseInt(el.dataset.step,10);
+    el.addEventListener('click',()=>{
+      // 只能跳到啟用步驟
+      const ok = !el.classList.contains('disabled');
+      if(!ok) return;
+      state.step = go;
+      render(true);
+    });
+  });
 }
 
 /* 每步畫面 */
-function render(){
+function render(skipAutoOpen){
   renderSteps(); refreshSummary();
-  btnPrev.disabled = state.step===1;
-  $('#formWrap').style.display = (state.step===4?'block':'none');
+  const {has1,has2,has3}=progress();
 
   // 控制 Next 按鈕可否按
   let nextEnable=false;
-  if(state.step===1) nextEnable=!!(state.dept && state.doc);
-  if(state.step===2) nextEnable=!!state.date;
-  if(state.step===3) nextEnable=!!state.slot;
+  if(state.step===1) nextEnable=has1;
+  if(state.step===2) nextEnable=has2;
+  if(state.step===3) nextEnable=has3;
   btnNext.disabled=!nextEnable;
+  btnPrev.disabled = state.step===1;
   hint.textContent = `步驟 ${state.step}：${['選擇科別/醫師','選擇日期','選擇時段','填寫資料'][state.step-1]}`;
 
-  // 依步驟渲染內容
+  // 右側表單顯示（桌機）
+  $('#formWrap').style.display = (state.step===4?'block':'none');
+
   if(state.step===1) renderStep1();
   if(state.step===2) renderStep2();
   if(state.step===3) renderStep3();
-  if(state.step===4) renderStep4();
+  if(state.step===4) renderStep4(skipAutoOpen);
 }
 
-/* Step 1：科別/醫師 */
+/* Step1 */
 function renderStep1(){
   stage.innerHTML=`
-    <div class="card">
-      <div class="tt">選擇科別</div>
-      <div class="row" id="deptRow"></div>
-      <div class="tt" style="margin-top:10px">選擇醫師</div>
-      <div class="row" id="docRow"></div>
-    </div>`;
+  <div class="card">
+    <div class="tt">選擇科別</div>
+    <div class="row" id="deptRow"></div>
+    <div class="tt" style="margin-top:10px">選擇醫師</div>
+    <div class="row" id="docRow"></div>
+  </div>`;
   const deptRow=$('#deptRow'), docRow=$('#docRow');
-
   DEPTS.forEach(d=>{
     const b=document.createElement('button');
     b.className='chip'; b.textContent=d.name; b.type='button';
@@ -217,7 +287,6 @@ function renderStep1(){
     b.onclick=()=>{ state.dept = (state.dept===d.id?null:d.id); if(state.dept!==d.id) state.doc=null; render(); };
     deptRow.appendChild(b);
   });
-
   DOCTORS.filter(x=>!state.dept || x.dept===state.dept).forEach(doc=>{
     const b=document.createElement('button');
     b.className='chip'; b.textContent=doc.name; b.type='button';
@@ -227,26 +296,24 @@ function renderStep1(){
   });
 }
 
-/* Step 2：日期（月曆） */
+/* Step2（月曆） */
 function renderStep2(){
   const now=new Date();
   const first=new Date(now.getFullYear(),now.getMonth(),1);
   const last =new Date(now.getFullYear(),now.getMonth()+1,0);
   stage.innerHTML=`
-    <div class="card">
-      <div class="tt">${now.getFullYear()} 年 ${now.getMonth()+1} 月</div>
-      <div class="grid7">${W.map(w=>`<div class="wd">${w}</div>`).join('')}</div>
-      <div class="grid7" id="days"></div>
-    </div>`;
-  const pad=first.getDay();
-  const days=$('#days'); let html='';
+  <div class="card">
+    <div class="tt">${now.getFullYear()} 年 ${now.getMonth()+1} 月</div>
+    <div class="grid7">${['日','一','二','三','四','五','六'].map(w=>`<div class="wd">${w}</div>`).join('')}</div>
+    <div class="grid7" id="days"></div>
+  </div>`;
+  const pad=first.getDay(); const days=$('#days'); let html='';
   for(let i=0;i<pad;i++) html+=`<div></div>`;
   for(let d=1; d<=last.getDate(); d++){
     const key=ymd(new Date(now.getFullYear(),now.getMonth(),d));
-    const isToday = (key===ymd(new Date()));
+    const isToday=(key===ymd(new Date()));
     html+=`<div class="day clickable ${isToday?'today':''} ${state.date===key?'selected':''}" data-ymd="${key}">
-      <div class="d">${d}</div>
-      <div class="meta">—</div>
+      <div class="d">${d}</div><div class="meta">—</div>
     </div>`;
   }
   days.innerHTML=html;
@@ -255,12 +322,12 @@ function renderStep2(){
   });
 }
 
-/* Step 3：時段（依醫師+日期） */
+/* Step3（時段） */
 function renderStep3(){
   if(!state.doc || !state.date){ stage.innerHTML='<div class="card">請先完成前一步。</div>'; return; }
   const slots=getSlots(state.date, state.doc);
   stage.innerHTML=`<div class="card">
-    <div class="tt">${state.date}（週${W[new Date(state.date+'T09:00:00').getDay()]}）</div>
+    <div class="tt">${state.date}（週${['日','一','二','三','四','五','六'][new Date(state.date+'T09:00:00').getDay()]}）</div>
     <div id="slotList" style="display:grid;gap:10px"></div>
   </div>`;
   const list=$('#slotList');
@@ -272,9 +339,9 @@ function renderStep3(){
       <div>${s.time}</div>
       <div class="remain">剩 ${s.remain} 人</div>`;
     row.onclick=()=>{ 
-      state.slot={type:s.slot,time:s.time}; 
+      state.slot={type:s.slot,time:s.time};
       list.querySelectorAll('.tile').forEach(x=>x.classList.remove('selected'));
-      row.classList.add('selected'); 
+      row.classList.add('selected');
       render();
     };
     if(state.slot && state.slot.type===s.slot && state.slot.time===s.time) row.classList.add('selected');
@@ -282,30 +349,78 @@ function renderStep3(){
   });
 }
 
-/* Step 4：表單（右側顯示，左側放說明） */
-function renderStep4(){
+/* Step4（表單） */
+function renderStep4(skipAutoOpen){
   stage.innerHTML=`<div class="card"><div class="tt">步驟 4：確認並填寫資料</div>
-  <div style="color:#6b7280">請於右側填寫姓名、生日等資訊後送出。</div></div>`;
+  <div style="color:#6b7280">在桌機可於右側直接填寫；手機會自動開啟全頁表單。</div></div>`;
+
+  // 手機（寬度 <= 900px）自動開 modal
+  if(window.matchMedia('(max-width: 900px)').matches && !skipAutoOpen){
+    openModal();
+  }
 }
 
-/* 下一步 / 上一步 */
-btnNext.onclick=()=>{
-  if(state.step===4) return;
-  state.step++;
-  render();
-};
-btnPrev.onclick=()=>{
-  if(state.step===1) return;
-  state.step--;
-  render();
-};
+/* Prev/Next */
+$('#nextBtn').onclick=()=>{ if(state.step<4) { state.step++; render(); } };
+$('#prevBtn').onclick=()=>{ if(state.step>1) { state.step--; render(true); } };
 
-/* 送出（Demo） */
-$('#submit').onclick=()=>{
-  const ok=$('#name').value.trim() && $('#birthday').value && $('#idnum').value.trim() && $('#phone').value.trim() && $('#agree').checked;
-  if(!ok){ alert('資料未填完整'); return; }
-  alert(`Demo 送出成功：\n${DEPTS.find(d=>d.id===state.dept)?.name}｜${DOCTORS.find(d=>d.id===state.doc)?.name}\n${state.date}｜${SLOT_TYPES[state.slot.type]} ${state.slot.time}`);
-};
+/* 送出（側欄） */
+$('#submit').onclick=submitSide;
+/* 開全頁表單（桌機用） */
+$('#openFull').onclick=openModal;
+/* Modal 控制 */
+const modal=$('#formModal');
+$('#modalMask').onclick=closeModal;
+$('#closeModal').onclick=closeModal;
+$('#m_submit').onclick=submitModal;
+
+function openModal(){
+  // 帶入側欄欄位到 modal（若已有）
+  $('#m_name').value = $('#name').value;
+  $('#m_birthday').value = $('#birthday').value;
+  $('#m_idnum').value = $('#idnum').value;
+  $('#m_phone').value = $('#phone').value;
+  $('#m_agree').checked = $('#agree').checked;
+
+  refreshSummary();
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
+function closeModal(){
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+}
+
+function okForm(prefix=''){
+  const g=id=>document.getElementById(prefix+id);
+  return g('name').value.trim() && g('birthday').value &&
+         g('idnum').value.trim() && g('phone').value.trim() && g('agree').checked;
+}
+
+function submitSide(){
+  if(!okForm('')){ alert('資料未填完整'); return; }
+  alertSummary();
+}
+function submitModal(){
+  if(!okForm('m_')){ alert('資料未填完整'); return; }
+  // 回填到側欄（讓兩邊保持一致）
+  $('#name').value     = $('#m_name').value;
+  $('#birthday').value = $('#m_birthday').value;
+  $('#idnum').value    = $('#m_idnum').value;
+  $('#phone').value    = $('#m_phone').value;
+  $('#agree').checked  = $('#m_agree').checked;
+  closeModal();
+  alertSummary();
+}
+
+function alertSummary(){
+  const dept=DEPTS.find(d=>d.id===state.dept)?.name;
+  const doc =DOCTORS.find(d=>d.id===state.doc)?.name;
+  const msg=`Demo 送出成功：
+${dept}｜${doc}
+${state.date}｜${SLOT_TYPES[state.slot.type]} ${state.slot.time}`;
+  alert(msg);
+}
 
 /* 初始化 */
 render();
