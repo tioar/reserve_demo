@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>線上預約｜DEMO F（單欄極簡 / 類 App 行事曆）</title>
+<style>
+:root{
+  --brand:#5a37c6; --brand-600:#4a2fb0;
+  --ink:#1a142b; --muted:#706b85;
+  --bg:#faf8ff; --card:#fff; --line:#ece6ff;
+  --today:#3a4150;
+  --green:#0d7a54; --blue:#1c52dd; --amber:#8a5a00; --pink:#9b197b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+.wrap{max-width:520px;margin:10px auto;padding:0 12px}
+.h1{display:flex;align-items:center;gap:10px;font-weight:900;font-size:clamp(20px,5vw,28px)}
+.logo{width:36px;height:36px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:900}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:12px}
+.header{display:flex;align-items:center;justify-content:space-between}
+.month{font-weight:900}
+.nav button{border:none;background:none;font-size:20px;cursor:pointer;color:#5a4aa8}
+
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+.wd{color:var(--muted);text-align:center;font-weight:800}
+.day{min-height:66px;background:#fff;border:1px solid #e7e4fb;border-radius:12px;display:flex;flex-direction:column;gap:4px;padding:6px}
+.day .d{font-weight:900}
+.day.clickable{cursor:pointer}
+.day.clickable:hover{box-shadow:0 0 0 2px #e4deff}
+.day.today{background:var(--today);color:#fff;border-color:var(--today)}
+.day.today .d{color:#fff}
+
+.pill{display:inline-block;border:1px solid #e6e7f4;border-radius:999px;padding:.08rem .46rem;font-weight:900;font-size:.72rem}
+.pill.early{background:#e7f7ee;color:var(--green);border-color:#cdeee0}
+.pill.noon {background:#fff3df;color:var(--amber);border-color:#ffe0a6}
+.pill.night{background:#e8f2ff;color:var(--blue); border-color:#cfe2ff}
+.pill.appt {background:#fde7ef;color:var(--pink); border-color:#ffc6e9}
+
+/* bottom sheet */
+.sheet{position:fixed;left:0;right:0;bottom:-100vh;background:#fff;border-radius:16px 16px 0 0;
+  border:1px solid #ece6ff;box-shadow:0 -10px 36px rgba(0,0,0,.08);padding:12px;transition:.25s;z-index:999}
+.sheet.show{bottom:0}
+.drag{width:38px;height:5px;border-radius:999px;background:#d9d2ff;margin:6px auto}
+.sheet .head{display:flex;align-items:center;justify-content:space-between}
+.sheet .date{font-weight:900}
+.sheet .close{border:none;background:none;font-size:18px;cursor:pointer;color:#786ec7}
+.slot{border:1px solid #e1e4f6;border-radius:12px;padding:10px;background:#fff;display:flex;gap:10px;align-items:center}
+.slot:hover{box-shadow:0 0 0 2px #ece8ff}
+.slot .remain{margin-left:auto;color:#475569}
+
+.btn{border:none;border-radius:12px;padding:.9rem 1rem;font-weight:900;cursor:pointer}
+.btn-main{background:var(--brand);color:#fff}
+.btn-main:hover{background:var(--brand-600)}
+.input{border:1px solid #dedbf6;border-radius:12px;height:44px;padding:0 .9rem;background:#fff;width:100%}
+.form{display:grid;gap:10px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="h1"><div class="logo">＋</div> 預約（DEMO F：單欄極簡）</div>
+
+  <div class="card">
+    <div class="header">
+      <div class="month" id="mTitle">—</div>
+      <div class="nav">
+        <button id="prev">‹</button>
+        <button id="next">›</button>
+      </div>
+    </div>
+    <div class="grid7" id="wd"></div>
+    <div class="grid7" id="days"></div>
+  </div>
+
+  <div class="card">
+    <div class="form">
+      <input id="name" class="input" placeholder="姓名 *"/>
+      <input id="birthday" class="input" type="date" placeholder="出生年月日 *"/>
+      <input id="idnum" class="input" maxlength="10" placeholder="身分證字號 *"/>
+      <input id="phone" class="input" maxlength="10" inputmode="numeric" placeholder="聯絡電話 *"/>
+      <label><input type="checkbox" id="agree"/> 我已閱讀並同意預約須知</label>
+      <button class="btn btn-main" id="submit">送出預約</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Sheet -->
+<div class="sheet" id="sheet">
+  <div class="drag"></div>
+  <div class="head">
+    <div class="date" id="sDate">—</div>
+    <button class="close" id="close">✕</button>
+  </div>
+  <div id="slots" style="display:grid;gap:10px;margin-top:8px"></div>
+</div>
+
+<script>
+/* ========= 假資料：日期→時段 ========= */
+const W=['日','一','二','三','四','五','六'];
+function pad2(n){return String(n).padStart(2,'0')}
+function ymd(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
+
+function genMonth(date){ // 產出當月假資料
+  const map={}; const first=new Date(date.getFullYear(),date.getMonth(),1);
+  const last =new Date(date.getFullYear(),date.getMonth()+1,0);
+  for(let i=1;i<=last.getDate();i++){
+    const d=new Date(date.getFullYear(),date.getMonth(),i);
+    const key=ymd(d); map[key]=[];
+    if(Math.random()<.55) map[key].push({slot:'early',label:'早診',time:'08:30~11:30',remain:Math.floor(Math.random()*6)+5});
+    if(Math.random()<.45) map[key].push({slot:'noon', label:'午診',time:'14:00~17:00',remain:Math.floor(Math.random()*6)+5});
+    if(Math.random()<.40) map[key].push({slot:'night',label:'晚診',time:'18:00~20:30',remain:Math.floor(Math.random()*6)+5});
+  }
+  return map;
+}
+/* ====================================== */
+
+const $=s=>document.querySelector(s);
+const NOW=new Date(); const TODAY=ymd(NOW);
+let cur = new Date(NOW.getFullYear(),NOW.getMonth(),1);
+let monthData = genMonth(cur);
+
+function renderHead(){ $('#mTitle').textContent=`${cur.getFullYear()}年${cur.getMonth()+1}月`; }
+function renderWeek(){ $('#wd').innerHTML=W.map(w=>`<div class="wd">${w}</div>`).join(''); }
+function renderMonth(){
+  const first=new Date(cur.getFullYear(),cur.getMonth(),1);
+  const last =new Date(cur.getFullYear(),cur.getMonth()+1,0);
+  const pad=first.getDay(); let html='';
+  for(let i=0;i<pad;i++) html+=`<div></div>`;
+  for(let d=1; d<=last.getDate(); d++){
+    const key=ymd(new Date(cur.getFullYear(),cur.getMonth(),d));
+    const has=(monthData[key]||[]).length>0;
+    const isToday=(key===TODAY);
+    html+=`<div class="day ${has?'clickable':''} ${isToday?'today':''}" data-ymd="${key}">
+      <div class="d">${d}</div>
+      <div class="meta">${
+        (monthData[key]||[]).slice(0,2).map(s=>`<span class="pill ${s.slot}">${s.label}</span>`).join(' ') || '—'
+      }</div></div>`;
+  }
+  $('#days').innerHTML=html;
+  $('#days').querySelectorAll('.day.clickable').forEach(el=>{
+    el.onclick=()=>openSheet(el.dataset.ymd);
+  });
+}
+function openSheet(dateYMD){
+  $('#sDate').textContent=`${dateYMD}（週${W[new Date(dateYMD+'T09:00:00').getDay()]}）`;
+  const arr=monthData[dateYMD]||[];
+  $('#slots').innerHTML = arr.map(s=>`<div class="slot">
+    <span class="pill ${s.slot}">${s.label}</span>
+    <div>${s.time}</div><div class="remain">剩 ${s.remain} 人</div>
+  </div>`).join('') || '<div style="color:#889">此日暫無時段</div>';
+  $('#sheet').classList.add('show');
+}
+$('#close').onclick=()=>$('#sheet').classList.remove('show');
+
+$('#prev').onclick=()=>{ cur=new Date(cur.getFullYear(),cur.getMonth()-1,1); monthData=genMonth(cur); renderHead(); renderMonth(); };
+$('#next').onclick=()=>{ cur=new Date(cur.getFullYear(),cur.getMonth()+1,1); monthData=genMonth(cur); renderHead(); renderMonth(); };
+
+$('#submit').onclick=()=>{
+  const ok=$('#name').value.trim() && $('#birthday').value && $('#idnum').value.trim() && $('#phone').value.trim() && $('#agree').checked;
+  if(!ok){ alert('資料未填完整'); return; }
+  alert('Demo：送出成功');
+};
+
+renderHead(); renderWeek(); renderMonth();
+</script>
+</body>
+</html>
