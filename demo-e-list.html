@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>線上預約｜DEMO E（列表式 + 篩選 + 無限載入）</title>
+<style>
+:root{
+  --brand:#3254d0; --brand-600:#2a47b1;
+  --ink:#171b2b; --muted:#647089;
+  --bg:#f6f8ff; --card:#fff; --line:#e6e9f7;
+  --early:#0a7a53; --noon:#8a5a00; --night:#1348d1; --appt:#9b197b;
+}
+*{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+.wrap{max-width:920px;margin:16px auto;padding:0 14px}
+.h1{font-weight:900;font-size:clamp(22px,4.4vw,30px);display:flex;align-items:center;gap:10px}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:900}
+
+.section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:12px}
+.tt{font-weight:900;margin:4px 2px 8px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid #d9def0;border-radius:999px;background:#fff;padding:.42rem .9rem;font-weight:800;cursor:pointer}
+.chip[aria-pressed="true"]{background:#e9edff;border-color:#cfd7fe;color:#2236a3}
+
+.dateHead{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:8px 2px 6px}
+.dateHead .d{font-weight:900}
+.slotList{display:grid;gap:10px}
+.slot{border:1px solid #e1e5f6;background:#fff;border-radius:12px;padding:10px;display:flex;gap:10px;align-items:center}
+.slot:hover{box-shadow:0 0 0 2px #e9eeff}
+.badge{min-width:3.5em;border-radius:999px;border:1px solid #e6e8f2;padding:.18rem .6rem;text-align:center;font-weight:900}
+.badge.early{background:#e7f7ee;color:var(--early);border-color:#c7eedc}
+.badge.noon {background:#fff3df;color:var(--noon); border-color:#ffe0a6}
+.badge.night{background:#e8f2ff;color:var(--night);border-color:#cfe2ff}
+.badge.appt {background:#fde7ef;color:var(--appt); border-color:#ffc6e9}
+.slot .meta{color:var(--muted)}
+.slot .remain{margin-left:auto;color:#475569;font-weight:700}
+
+.loadmore{display:block;width:100%;border:none;border-radius:12px;padding:.8rem 1rem;
+  font-weight:900;background:var(--brand);color:#fff;cursor:pointer}
+.loadmore:hover{background:var(--brand-600)}
+
+.empty{color:#8792ad;padding:12px 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="h1"><div class="logo">＋</div> 預約（DEMO E：列表 + 無限載入）</div>
+
+  <!-- 篩選 -->
+  <div class="section">
+    <div class="tt">篩選條件</div>
+    <div class="row" id="deptRow"></div>
+    <div class="row" id="docRow" style="margin-top:6px"></div>
+    <div class="row" id="slotRow" style="margin-top:6px"></div>
+  </div>
+
+  <!-- 清單 -->
+  <div class="section">
+    <div id="list"></div>
+    <button id="more" class="loadmore" style="margin-top:10px">載入更多</button>
+  </div>
+</div>
+
+<script>
+/* ========= 假資料（可換成 API） ========= */
+const DEPTS=[{id:'ped',name:'小兒科'},{id:'fm',name:'家醫科'},{id:'der',name:'皮膚科'}];
+const DOCTORS=[{id:'cheng',name:'陳萬龍 醫師',dept:'fm'},{id:'tsai',name:'蔡怡君 醫師',dept:'ped'},{id:'lin',name:'林子杰 醫師',dept:'der'}];
+const SLOT_TYPES=[{id:'early',name:'早診'},{id:'noon',name:'午診'},{id:'night',name:'晚診'},{id:'appt',name:'約診'}];
+
+/* 產生某天的隨機時段（示意） */
+function makeDay(dateYMD){
+  const r=()=>Math.random();
+  const arr=[];
+  if(r()<.6) arr.push({slot:'early',time:'08:30~11:30',doc:pickDoc().name,remain:5+Math.floor(r()*6)});
+  if(r()<.55) arr.push({slot:'noon', time:'14:00~17:00',doc:pickDoc().name,remain:5+Math.floor(r()*6)});
+  if(r()<.45) arr.push({slot:'night',time:'18:00~20:30',doc:pickDoc().name,remain:5+Math.floor(r()*6)});
+  if(r()<.25) arr.push({slot:'appt', time:'另行通知',doc:pickDoc().name,remain:10+Math.floor(r()*10)});
+  return {date:dateYMD, items:arr};
+}
+function pickDoc(){ return DOCTORS[Math.floor(Math.random()*DOCTORS.length)]; }
+/* ======================================= */
+
+const $=s=>document.querySelector(s);
+const $list=$('#list');
+const state={dept:null,doc:null,slot:null, cursor:new Date()};
+const W=['日','一','二','三','四','五','六'];
+function pad2(n){return String(n).padStart(2,'0')}
+function ymd(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
+
+function renderChips(){
+  const mk=(arr,holder,key)=>{ const wrap=$(holder); wrap.innerHTML='';
+    arr.forEach(x=>{
+      const b=document.createElement('button'); b.className='chip'; b.type='button'; b.textContent=x.name;
+      if(state[key]===x.id) b.setAttribute('aria-pressed','true');
+      b.onclick=()=>{ state[key]=(state[key]===x.id?null:x.id); 
+        if(key==='dept') state.doc=null; // 切科別清空醫師
+        renderChips(); rebuild();
+      };
+      wrap.appendChild(b);
+    });
+  };
+  mk(DEPTS,'#deptRow','dept');
+  mk(DOCTORS.filter(d=>!state.dept||d.dept===state.dept),'#docRow','doc');
+  mk(SLOT_TYPES,'#slotRow','slot');
+}
+
+function buildSection(day){
+  const d=new Date(day.date+'T09:00:00');
+  const head=`<div class="dateHead">
+      <div class="d">${day.date}（週${W[d.getDay()]}）</div>
+    </div>`;
+  if(!day.items.length) return head+`<div class="empty">本日無開放預約</div>`;
+  const rows=day.items
+   .filter(x=>!state.slot||x.slot===state.slot)
+   .filter(x=>!state.doc || x.doc.includes($('#docRow [aria-pressed="true"]')?.textContent?.replace(' 醫師','')||''))
+   .map(x=>`<div class="slot">
+        <span class="badge ${x.slot}">${SLOT_TYPES.find(s=>s.id===x.slot)?.name||''}</span>
+        <div><div><strong>${x.doc}</strong></div><div class="meta">${x.time}</div></div>
+        <div class="remain">剩 ${x.remain} 人</div>
+      </div>`).join('');
+  return head+`<div class="slotList">${rows||'<div class="empty">本日無符合篩選的時段</div>'}</div>`;
+}
+
+function loadMore(days=14){
+  const frag=document.createDocumentFragment();
+  for(let i=0;i<days;i++){
+    const y=ymd(state.cursor);
+    const sec=document.createElement('div');
+    sec.innerHTML=buildSection(makeDay(y));
+    frag.appendChild(sec);
+    state.cursor.setDate(state.cursor.getDate()+1);
+  }
+  $list.appendChild(frag);
+}
+
+function rebuild(){ $list.innerHTML=''; state.cursor=new Date(); loadMore(); }
+renderChips(); rebuild();
+$('#more').onclick=()=>loadMore();
+</script>
+</body>
+</html>
