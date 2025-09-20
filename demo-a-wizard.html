@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>線上預約｜DEMO A（Mobile Wizard）</title>
+<style>
+:root{
+  /* 主題色：醫療友善紫 */
+  --brand:#5b3cc4;
+  --brand-600:#4b31a6;
+  --ink:#1f1633;
+  --muted:#6b6392;
+  --bg:#faf8ff;
+  --card:#ffffff;
+  --line:#ece8f8;
+
+  /* 診別色 */
+  --early-bg:#e7f7ee; --early-tx:#085e42; --early-bd:#bfead7;
+  --noon-bg:#fff3df;  --noon-tx:#7a4d00; --noon-bd:#ffd89e;
+  --night-bg:#e8f2ff; --night-tx:#1d4ed8; --night-bd:#cfe2ff;
+  --appt-bg:#fde7ef;  --appt-tx:#b51695; --appt-bd:#ff9edc;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+.container{max-width:880px;margin:14px auto 28px;padding:0 14px}
+
+/* Header */
+.h1{font-weight:900;font-size:clamp(22px,4.6vw,34px);display:flex;align-items:center;gap:10px;margin:10px 4px 14px}
+.logo{width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:900}
+
+/* Wizard steps header */
+.steps{display:flex;gap:8px;overflow-x:auto;padding:8px 4px;margin-bottom:10px}
+.step-pill{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:.5rem .85rem;font-weight:800;color:#49396f}
+.step-pill[aria-current="step"]{background:var(--brand);color:#fff;border-color:transparent}
+
+/* Card */
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.stack{display:grid;gap:12px}
+
+/* Section titles */
+.tt{font-weight:900;color:#2b1d48;margin:2px 0 8px}
+.hint{color:var(--muted);font-size:.92rem}
+
+/* Chips / selectors */
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid #e3e2ee;background:#fff;border-radius:999px;padding:.45rem .9rem;font-weight:800;cursor:pointer}
+.chip[aria-pressed="true"]{background:#efeaff;border-color:#e0d9ff;color:#3f2d83}
+
+/* date scroller */
+.datebar{display:flex;align-items:center;gap:10px}
+.navbtn{border:none;background:#f1eefc;border:1px solid #e4ddff;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
+.dates{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory}
+.date-btn{scroll-snap-align:start;min-width:72px;border:1px solid #e6e4f3;background:#fff;border-radius:12px;padding:.6rem .4rem;text-align:center;cursor:pointer}
+.date-btn .d{font-weight:900}
+.date-btn small{color:#8a86a2}
+.date-btn[aria-pressed="true"]{background:#2f3341;color:#fff;border-color:#2f3341}
+.date-btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* time slots */
+.slot{border:1px dashed #dcdaf0;background:#fff;border-radius:12px;padding:.6rem .8rem;cursor:pointer;font-weight:800}
+.slot.early{background:var(--early-bg);border-color:var(--early-bd);color:var(--early-tx)}
+.slot.noon {background:var(--noon-bg); border-color:var(--noon-bd); color:var(--noon-tx)}
+.slot.night{background:var(--night-bg);border-color:var(--night-bd);color:var(--night-tx)}
+.slot.appt {background:var(--appt-bg); border-color:var(--appt-bd); color:var(--appt-tx)}
+.slot[aria-pressed="true"]{outline:2px solid #0002}
+
+/* form */
+.input{width:100%;border:1px solid #d7d5e8;border-radius:12px;height:46px;padding:0 .9rem;font-size:16px;background:#fff}
+.btn-main{background:var(--brand);border:none;border-radius:14px;color:#fff;font-weight:900;padding:1rem 1.25rem;cursor:pointer}
+.btn-main:hover{background:var(--brand-600)}
+.btn-ghost{background:#fff;border:1px solid #e2def3;border-radius:14px;color:#3b2d79;font-weight:900;padding:.9rem 1.1rem}
+
+/* footer bar (mobile next) */
+.sticky{position:sticky;bottom:0;z-index:10;background:linear-gradient(to top, #faf8ff 70%, transparent);padding:10px 0 0}
+
+/* layout on desktop */
+@media (min-width:880px){
+  .grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="h1"><div class="logo">＋</div> 線上預約（DEMO A）</div>
+
+  <div class="steps" role="tablist" aria-label="預約流程">
+    <div class="step-pill" id="st1" aria-current="step">1 選擇科別/醫師</div>
+    <div class="step-pill" id="st2">2 選擇日期</div>
+    <div class="step-pill" id="st3">3 選擇時段</div>
+    <div class="step-pill" id="st4">4 填寫資料</div>
+  </div>
+
+  <div class="grid2">
+    <!-- 左側：流程 -->
+    <div class="stack">
+      <!-- Step 1 -->
+      <div class="card" id="panel1">
+        <div class="tt">科別</div>
+        <div class="row" id="deptRow"></div>
+        <div class="tt" style="margin-top:10px">醫師</div>
+        <div class="row" id="docRow"></div>
+        <div class="hint">小提醒：先選科別再選醫師，可縮小後續時段。</div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="card" id="panel2" hidden>
+        <div class="tt">選擇日期</div>
+        <div class="datebar">
+          <button class="navbtn" id="prevDay" aria-label="前幾天">‹</button>
+          <div class="dates" id="dateBar"></div>
+          <button class="navbtn" id="nextDay" aria-label="後幾天">›</button>
+        </div>
+        <div class="hint">僅顯示未額滿的日期。</div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="card" id="panel3" hidden>
+        <div class="tt">可預約時段</div>
+        <div class="row" id="slotRow"></div>
+        <div class="hint">點一下選擇想要的看診時段。</div>
+      </div>
+    </div>
+
+    <!-- 右側：表單 -->
+    <div class="stack">
+      <div class="card">
+        <div class="tt">預約資訊確認</div>
+        <div class="hint" id="summary">尚未選擇</div>
+      </div>
+
+      <div class="card">
+        <div class="tt">填寫資料</div>
+        <div class="stack">
+          <input id="name" class="input" placeholder="姓名 *"/>
+          <input id="birthday" class="input" type="date" placeholder="出生年月日 *"/>
+          <input id="idnum" class="input" placeholder="身分證字號 *" maxlength="10"/>
+          <input id="phone" class="input" placeholder="聯絡電話 *" inputmode="numeric" maxlength="10"/>
+          <label><input type="checkbox" id="agree"/> 我已閱讀並同意預約須知</label>
+          <button class="btn-main" id="submit">送出預約</button>
+          <button class="btn-ghost" onclick="alert('Demo：查詢/取消')">查詢/取消預約</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sticky">
+    <div class="card" style="border-style:dashed">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="hint" id="stickyHint">步驟 1：請先選科別/醫師</div>
+        <button class="btn-main" id="nextBtn">下一步</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 假資料（可改成打 API） ===== */
+const DEPTS = [
+  {id:'ped', name:'小兒科'},
+  {id:'fm',  name:'家醫科'},
+  {id:'der', name:'皮膚科'}
+];
+const DOCTORS = [
+  {id:'cheng', name:'陳萬龍醫師', dept:'fm'},
+  {id:'tsai',  name:'蔡怡君醫師', dept:'ped'},
+  {id:'lin',   name:'林子杰醫師', dept:'der'},
+];
+/* 可預約：指定醫師、指定日期(YYYY-MM-DD) → 時段陣列 */
+const SLOTS = {
+  // 陳萬龍
+  'cheng':{
+    '2025-09-23':[
+      {label:'早診', slot:'early', time:'08:30 ~ 11:30', remain:8},
+      {label:'晚診', slot:'night', time:'18:00 ~ 20:30', remain:9},
+    ],
+    '2025-09-24':[
+      {label:'午診', slot:'noon',  time:'14:00 ~ 17:00', remain:10},
+    ],
+    '2025-09-30':[
+      {label:'早診', slot:'early', time:'08:30 ~ 11:30', remain:10},
+      {label:'晚診', slot:'night', time:'18:00 ~ 20:30', remain:10},
+    ]
+  },
+  // 蔡醫師
+  'tsai':{
+    '2025-09-22':[{label:'早診',slot:'early',time:'09:00 ~ 12:00',remain:7}],
+    '2025-09-25':[{label:'晚診',slot:'night',time:'18:30 ~ 20:00',remain:9}],
+  },
+  // 林醫師
+  'lin':{
+    '2025-09-24':[{label:'午診',slot:'noon',time:'13:30 ~ 16:30',remain:8}],
+  }
+};
+
+/* ===== 狀態 ===== */
+let state = {
+  dept:null, doctor:null, date:null, slot:null
+};
+const $ = sel => document.querySelector(sel);
+const $depts = $('#deptRow'), $docs = $('#docRow'), $dates = $('#dateBar');
+const $slotRow = $('#slotRow'), $sum = $('#summary'), $sticky = $('#stickyHint');
+
+/* ===== UI Helpers ===== */
+function setStep(n){
+  ['#st1','#st2','#st3','#st4'].forEach((id,i)=>{
+    const el=$(id); el.removeAttribute('aria-current');
+    if(i===n-1) el.setAttribute('aria-current','step');
+  });
+  $('#panel1').hidden = !(n===1);
+  $('#panel2').hidden = !(n===2);
+  $('#panel3').hidden = !(n===3);
+  $sticky.textContent = ({
+    1:'步驟 1：請先選科別/醫師',
+    2:'步驟 2：請選日期',
+    3:'步驟 3：請選時段',
+    4:'步驟 4：填寫資料並送出'
+  })[n];
+}
+function paintSummary(){
+  const d = state;
+  if(!d.doctor||!d.date||!d.slot){ $sum.textContent='尚未選擇'; return;}
+  const doc = DOCTORS.find(x=>x.id===d.doctor)?.name||'';
+  $sum.textContent = `${d.date}｜${doc}｜${d.slot.label} ${d.slot.time}`;
+}
+
+/* ===== Step 1：科別/醫師 ===== */
+function renderDepts(){
+  $depts.innerHTML='';
+  DEPTS.forEach(x=>{
+    const btn=document.createElement('button');
+    btn.className='chip'; btn.textContent=x.name; btn.type='button';
+    if(state.dept===x.id) btn.setAttribute('aria-pressed','true');
+    btn.onclick=()=>{ state.dept=x.id; state.doctor=null; renderDepts(); renderDocs(); setStep(1); };
+    $depts.appendChild(btn);
+  });
+}
+function renderDocs(){
+  $docs.innerHTML='';
+  DOCTORS.filter(d=>!state.dept || d.dept===state.dept).forEach(x=>{
+    const btn=document.createElement('button');
+    btn.className='chip'; btn.textContent=x.name; btn.type='button';
+    if(state.doctor===x.id) btn.setAttribute('aria-pressed','true');
+    btn.onclick=()=>{ state.doctor=x.id; renderDocs(); setStep(2); renderDates(); };
+    $docs.appendChild(btn);
+  });
+}
+
+/* ===== Step 2：日期 ===== */
+let dateWindowStartIdx=0;
+function availableDatesForDoctor(docId){
+  if(!docId) return [];
+  return Object.keys(SLOTS[docId]||{}).sort();
+}
+function renderDates(){
+  $dates.innerHTML='';
+  const arr=availableDatesForDoctor(state.doctor);
+  if(!arr.length){ $dates.innerHTML='<div class="hint">無可預約日期</div>'; return; }
+  const chunk = arr.slice(dateWindowStartIdx, dateWindowStartIdx+10);
+  chunk.forEach(d=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='date-btn';
+    btn.innerHTML=`<div class="d">${d.slice(8)}</div><small>${d}</small>`;
+    if(state.date===d) btn.setAttribute('aria-pressed','true');
+    btn.onclick=()=>{ state.date=d; setStep(3); renderSlots(); paintSummary(); };
+    $dates.appendChild(btn);
+  });
+  $('#prevDay').onclick=()=>{ if(dateWindowStartIdx>0){ dateWindowStartIdx-=5; renderDates(); } };
+  $('#nextDay').onclick=()=>{ if(dateWindowStartIdx+10<arr.length){ dateWindowStartIdx+=5; renderDates(); } };
+}
+
+/* ===== Step 3：時段 ===== */
+function renderSlots(){
+  $slotRow.innerHTML='';
+  const slots=(SLOTS[state.doctor]||{})[state.date]||[];
+  slots.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className=`slot ${s.slot}`;
+    btn.textContent=`${s.label} ${s.time}（剩 ${s.remain} 人）`;
+    if(state.slot && state.slot.time===s.time) btn.setAttribute('aria-pressed','true');
+    btn.onclick=()=>{ state.slot=s; paintSummary(); setStep(4); };
+    $slotRow.appendChild(btn);
+  });
+}
+
+/* 下一步 */
+$('#nextBtn').onclick=()=>{
+  if(!state.doctor){ setStep(1); return; }
+  if(!state.date){ setStep(2); return; }
+  if(!state.slot){ setStep(3); return; }
+  setStep(4);
+};
+
+/* 送出（DEMO） */
+$('#submit').onclick=()=>{
+  const n=$('#name').value.trim(), b=$('#birthday').value, i=$('#idnum').value.trim(), p=$('#phone').value.trim(), a=$('#agree').checked;
+  if(!n||!b||!i||!p||!a||!state.slot||!state.date){ alert('資料未填完整'); return; }
+  alert(`Demo：預約成功\n${state.date}｜${state.slot.label} ${state.slot.time}`);
+};
+
+/* 啟動 */
+renderDepts(); renderDocs(); setStep(1);
+</script>
+</body>
+</html>
