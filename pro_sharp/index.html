@@ -1,111 +1,119 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>直角專業風｜預約月曆</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>預約系統 — 直角專業風</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f8fb; --card:#fff; --ink:#0e1a2b; --muted:#3d5572; --line:#e1e8f5;
-  --accent:#1f6feb; --accent-2:#eaf3ff;
-  --today:#2f3a4a; --today-ink:#fff;
-  --font:"Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
+  /* Fathomless 調深 */
+  --bg:#f5f7fb;
+  --ink:#0f172a;
+  --muted:#475569;
+
+  --brand:#1f57c5;
+  --brand-600:#1747a3;
+
+  --ok:#166534;
+  --warn:#854d0e;
+
+  --card:#ffffff;
+  --grid:#e5e7eb;
+
+  --today-bg:#4b5563;
+  --today-ink:#ffffff;
+
+  --radius:0;            /* 無圓角 */
 }
+
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font)}
-.wrap{max-width:1180px;margin:28px auto;padding:0 16px}
-.h1{font-weight:900;font-size:clamp(22px,3.2vw,32px);margin:6px 0 18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 18px rgba(10,37,64,.08)}
-.header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
-.header .now{font-weight:900;color:#19407a}
-.header .btn{background:var(--accent-2);border:1px solid var(--accent);color:#19407a;padding:.5rem .8rem;border-radius:8px;font-weight:800}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+.wrap{max-width:1120px;margin:28px auto;padding:0 16px}
 
-.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;padding:12px 16px}
-.wday{font-size:.88rem;color:var(--muted);text-align:center;font-weight:800}
-.day{border:1px solid var(--line);border-radius:8px;min-height:90px;background:#fff;display:flex;flex-direction:column;padding:8px;gap:6px}
-.day .d{font-weight:900}
-.day .meta{margin-top:auto;font-size:.86rem;color:#264a8a}
-.day:hover{outline:2px solid #c9dbff}
-.day.disabled{background:#f0f3f8;color:#8b97a8}
-.day.today{background:var(--today);color:var(--today-ink);border-color:#1f2937}
-.day.today .d{color:#fff}
-.badge{display:inline-block;padding:.15rem .4rem;border-radius:6px;border:1px solid #c9dbff;background:#eaf1ff;color:#1d3da6;font-weight:800;margin-right:4px}
-.meta .badge.warn{background:#fff0d8;color:#7a4d00;border-color:#ffd39c}
-.meta .badge.ok{background:#e9f6f1;color:#0f5132;border-color:#bfe9dc}
+.header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+.h1{font-size:clamp(28px,3.6vw,40px);font-weight:900;letter-spacing:.02em}
+.theme{font-weight:900;color:var(--brand)}
 
-#panel{display:none;border-top:1px solid var(--line);padding:12px 16px}
-.row{display:flex;align-items:center;gap:14px;border:1px dashed #cbd5e1;padding:10px;border-radius:8px;margin:8px 0}
-.row strong{font-weight:900}
-.row .remain{margin-left:auto;color:#334155}
-@media (max-width:680px){
-  .grid{gap:4px}
-  .day{min-height:76px}
-  .meta .badge{display:block;margin:2px 0 0}
+.panel{background:var(--card);border:1px solid #dfe3ea;border-radius:var(--radius)}
+.row{padding:14px 16px;border-bottom:1px solid #e9edf4}
+.row:last-child{border-bottom:none}
+
+/* rule bar */
+.rulebar{display:flex;align-items:center;gap:12px}
+#now{font-weight:900;color:var(--brand)}
+.btn{border:2px solid var(--brand);background:#fff;color:var(--brand);font-weight:900;padding:.5rem .9rem;border-radius:0}
+.btn:hover{background:var(--brand);color:#fff}
+
+/* calendar */
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:2px solid var(--grid);border-left:2px solid var(--grid)}
+.w,.day{border-right:2px solid var(--grid);border-bottom:2px solid var(--grid)}
+.w{padding:.6rem 0;text-align:center;color:var(--muted);font-weight:900;background:#f0f3f8}
+.day{min-height:110px;padding:10px;display:flex;flex-direction:column}
+.d{font-weight:900}
+.meta{margin-top:auto;display:flex;gap:6px;flex-wrap:wrap;color:var(--muted)}
+
+.day.today{background:var(--today-bg);color:var(--today-ink)}
+.day.today .d{color:var(--today-ink)}
+.day.today .meta{color:var(--today-ink)}
+.day.today .meta::before{content:"—";}
+.day.today .meta > *{display:none}
+
+/* badge(方角) */
+.badge{display:inline-flex;align-items:center;font-weight:900;border:2px solid #cbd5e1;padding:.18rem .4rem;font-size:.9rem}
+.badge.ok{border-color:#86efac;color:var(--ok);background:#f0fdf4}
+.badge.warn{border-color:#fde68a;color:var(--warn);background:#fffbeb}
+.badge.info{border-color:#93c5fd;color:#1d4ed8;background:#eff6ff}
+
+/* responsive */
+@media (max-width:720px){
+  .day{min-height:96px;padding:8px}
+  .badge{font-size:.84rem}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="h1">直角專業風｜預約月曆</div>
+  <div class="header">
+    <div class="h1">線上預約（DEMO）</div>
+    <div class="theme">主題：直角專業風（深藍系 / 無圓角 / 強格線）</div>
+  </div>
 
-  <div class="card">
-    <div class="header">
-      <span id="now" class="now"></span>
+  <div class="panel">
+    <div class="row rulebar">
+      <div id="now"></div>
       <button class="btn">開放預約日期規則</button>
     </div>
+    <div class="row">
+      <div class="grid">
+        <div class="w">日</div><div class="w">一</div><div class="w">二</div><div class="w">三</div><div class="w">四</div><div class="w">五</div><div class="w">六</div>
 
-    <div class="grid" id="whead"></div>
-    <div class="grid" id="days"></div>
-    <div id="panel"></div>
+        <div class="day"><div class="d">1</div><div class="meta">—</div></div>
+        <div class="day"><div class="d">2</div><div class="meta"><span class="badge ok">早診 8</span></div></div>
+        <div class="day today"><div class="d">3</div><div class="meta"><span class="badge info">今天</span></div></div>
+        <div class="day"><div class="d">4</div><div class="meta"><span class="badge warn">午診 10</span></div></div>
+        <div class="day"><div class="d">5</div><div class="meta"><span class="badge info">晚診 9</span></div></div>
+        <div class="day"><div class="d">6</div><div class="meta">—</div></div>
+        <div class="day"><div class="d">7</div><div class="meta">—</div></div>
+
+        <div class="day"><div class="d">8</div><div class="meta"><span class="badge ok">早診 9</span></div></div>
+        <div class="day"><div class="d">9</div><div class="meta">—</div></div>
+        <div class="day"><div class="d">10</div><div class="meta">—</div></div>
+        <div class="day"><div class="d">11</div><div class="meta">—</div></div>
+        <div class="day"><div class="d">12</div><div class="meta"><span class="badge warn">午診 8</span></div></div>
+        <div class="day"><div class="d">13</div><div class="meta">—</div></div>
+        <div class="day"><div class="d">14</div><div class="meta">—</div></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-const W=['日','一','二','三','四','五','六'];
-function pad2(n){return String(n).padStart(2,'0')}
-function nowTxt(){const d=new Date();return `現在時間：${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())}（週${W[d.getDay()]}）`}
-document.getElementById('now').textContent=nowTxt();
-
-const $whead=document.getElementById('whead');$whead.innerHTML=W.map(w=>`<div class="wday">${w}</div>`).join('');
-const $days=document.getElementById('days'); const $panel=document.getElementById('panel');
-const base=new Date(); base.setDate(1);
-const todayKey=[new Date().getFullYear(),pad2(new Date().getMonth()+1),pad2(new Date().getDate())].join('-');
-
-function ymd(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
-function render(){
-  const first=new Date(base.getFullYear(),base.getMonth(),1);
-  const last=new Date(base.getFullYear(),base.getMonth()+1,0);
-  let html=''; for(let i=0;i<first.getDay();i++) html+=`<div></div>`;
-  for(let dd=1;dd<=last.getDate();dd++){
-    const cur=new Date(base.getFullYear(),base.getMonth(),dd);
-    const key=ymd(cur); const isToday=(key===todayKey);
-    const open = dd>=23 && dd<=27;
-    let meta='—', cls='day';
-    if(isToday) cls+=' today';
-    if(open){
-      meta = `
-        <span class="badge ok">早診 剩8</span>
-        <span class="badge warn">午診 剩10</span>
-        <span class="badge">晚診 剩9</span>`;
-    }else{ cls+=' disabled'; }
-    html += `<div class="${cls}" data-key="${key}"><div class="d">${dd}</div><div class="meta">${meta}</div></div>`;
-  }
-  $days.innerHTML=html;
-  $days.querySelectorAll('.day').forEach(el=>{
-    if(!el.classList.contains('disabled')){
-      el.addEventListener('click',()=>openDay(el.dataset.key));
-    }
-  });
-}
-function openDay(key){
-  const d=new Date(key); const wd=W[d.getDay()];
-  $panel.style.display='block';
-  $panel.innerHTML=`
-    <div class="row"><strong>${key}（週${wd}） 早診</strong><span>08:30~11:30</span><span class="remain">剩餘 8</span></div>
-    <div class="row"><strong>${key}（週${wd}） 午診</strong><span>14:00~17:00</span><span class="remain">剩餘 10</span></div>
-    <div class="row"><strong>${key}（週${wd}） 晚診</strong><span>18:00~20:30</span><span class="remain">剩餘 9</span></div>`;
-}
-render();
+const w=["日","一","二","三","四","五","六"], d=new Date();
+document.getElementById("now").textContent=
+ `現在時間：${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}（週${w[d.getDay()]}）`;
 </script>
 </body>
 </html>
