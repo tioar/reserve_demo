@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>線上預約｜DEMO B（Date-first）</title>
+<style>
+:root{
+  --brand:#5b3cc4; --brand-600:#4b31a6;
+  --ink:#1e1533; --muted:#6a5f92;
+  --bg:#f7f6fb; --card:#fff; --line:#ece6fb;
+  --today:#6d7481; --today-ink:#fff;
+
+  --early-bg:#e7f7ee; --early-bd:#bfead7; --early-tx:#085e42;
+  --noon-bg:#fff3df;  --noon-bd:#ffd89e; --noon-tx:#7a4d00;
+  --night-bg:#e8f2ff; --night-bd:#cfe2ff; --night-tx:#1d4ed8;
+  --appt-bg:#fde7ef;  --appt-bd:#ff9edc; --appt-tx:#b51695;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif}
+.container{max-width:1000px;margin:18px auto;padding:0 14px}
+.h1{display:flex;align-items:center;gap:12px;font-weight:900;font-size:clamp(22px,4.5vw,32px);margin:0 0 10px}
+.logo{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:var(--brand);color:#fff;font-weight:900}
+
+/* header row */
+.headrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 2px 12px}
+.muted{color:var(--muted);font-weight:800}
+.rule-btn{border:none;background:#efe9ff;color:#4a2f82;font-weight:800;border-radius:999px;padding:.5rem 1rem}
+
+/* calendar */
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px}
+.pad{padding:14px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.wd{font-size:.92rem;color:var(--muted);text-align:center;font-weight:800}
+.day{min-height:92px;background:#fff;border:1px solid #e6e8f0;border-radius:14px;display:flex;flex-direction:column;gap:6px;padding:8px}
+.day .d{font-weight:900;color:#24163a}
+.day .meta{margin-top:auto;color:#9aa0aa}
+.day.clickable{cursor:pointer}
+.day.clickable:hover{box-shadow:0 0 0 2px #d7caf6}
+.day.disabled{background:#f1f2f6;color:#8b90a3;border-color:#e5e7eb;opacity:.85;pointer-events:none}
+.day.today{background:#7b838f;border-color:#505766}
+.day.today .d,.day.today .meta{color:var(--today-ink)}
+/* pills in cell (preview) */
+.pill{display:inline-block;border-radius:999px;border:1px solid #e3e6ee;padding:.1rem .5rem;font-weight:900;font-size:.78rem}
+.pill.early{background:var(--early-bg);border-color:var(--early-bd);color:var(--early-tx)}
+.pill.noon {background:var(--noon-bg); border-color:var(--noon-bd); color:var(--noon-tx)}
+.pill.night{background:var(--night-bg);border-color:var(--night-bd);color:var(--night-tx)}
+.pill.appt {background:var(--appt-bg); border-color:var(--appt-bd); color:var(--appt-tx)}
+
+/* slot list */
+.slot-card{display:flex;align-items:center;gap:10px;border:1px solid #e0e4ef;border-radius:14px;padding:12px;background:#fff}
+.slot-card:hover{box-shadow:0 0 0 2px #e6dbff}
+.slot-card .remain{margin-left:auto;color:#475569}
+.slot-card.early{background:var(--early-bg);border-color:var(--early-bd);color:var(--early-tx)}
+.slot-card.noon {background:var(--noon-bg); border-color:var(--noon-bd); color:var(--noon-tx)}
+.slot-card.night{background:var(--night-bg);border-color:var(--night-bd);color:var(--night-tx)}
+.slot-card.appt {background:var(--appt-bg); border-color:var(--appt-bd); color:var(--appt-tx)}
+
+/* form */
+.form{display:grid;gap:12px}
+.input{width:100%;border:1px solid #d7d5e8;border-radius:12px;height:46px;padding:0 .9rem;font-size:16px;background:#fff}
+.btn-main{background:var(--brand);border:none;border-radius:14px;color:#fff;font-weight:900;padding:1rem 1.25rem;cursor:pointer}
+.btn-main:hover{background:var(--brand-600)}
+.btn-ghost{background:#fff;border:1px solid #dcd7f3;border-radius:14px;color:#3b2d79;font-weight:900;padding:.9rem 1.1rem;text-align:center;text-decoration:none}
+
+/* mobile tweaks */
+@media (max-width:640px){
+  .day{min-height:72px}
+  .pill{display:block;padding:.12rem .35rem;margin-bottom:4px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="h1"><div class="logo">＋</div> 陳萬龍診所門診線上預約</div>
+
+  <div class="card pad">
+    <div class="headrow">
+      <div class="muted" id="nowTxt">今天日期：</div>
+      <button class="rule-btn">開放預約日期規則</button>
+    </div>
+
+    <div class="grid" id="wdrow"></div>
+    <div class="grid" id="days"></div>
+
+    <div class="pad" id="dayPanel" hidden></div>
+  </div>
+
+  <div class="card pad" style="margin-top:14px">
+    <div class="muted" id="selDateTxt">尚未選擇日期</div>
+    <div class="form" style="margin-top:10px">
+      <input id="name" class="input" placeholder="姓名 *"/>
+      <input id="birthday" class="input" type="date" placeholder="出生年月日 *"/>
+      <input id="idnum" class="input" placeholder="身分證字號 *" maxlength="10"/>
+      <input id="phone" class="input" placeholder="聯絡電話 *" inputmode="numeric" maxlength="10"/>
+      <label><input type="checkbox" id="agree"/> 我已閱讀並同意預約須知</label>
+      <button class="btn-main" id="submit">送出預約</button>
+      <a class="btn-ghost" href="#" onclick="alert('Demo：查詢/取消');return false;">查詢/取消預約</a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 假資料 ===== */
+const W = ['日','一','二','三','四','五','六'];
+const NOW = new Date();
+const TODAY = ymd(NOW);
+
+/* 格式工具 */
+function pad2(n){return String(n).padStart(2,'0')}
+function ymd(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
+function firstOfMonth(d){return new Date(d.getFullYear(),d.getMonth(),1)}
+function endOfMonth(d){return new Date(d.getFullYear(),d.getMonth()+1,0)}
+
+/* 假資料：每個日期的開放時段 */
+const DAY_SLOTS = {
+  '2025-09-23':[
+    {slot:'early', label:'早診', time:'08:30 ~ 11:30', doctor:'陳萬龍醫師', remain:7},
+    {slot:'night', label:'晚診', time:'18:00 ~ 20:30', doctor:'陳萬龍醫師', remain:6},
+  ],
+  '2025-09-24':[
+    {slot:'early', label:'早診', time:'08:30 ~ 11:30', doctor:'陳萬龍醫師', remain:10},
+    {slot:'noon',  label:'午診', time:'14:00 ~ 17:00', doctor:'陳萬龍醫師', remain:10},
+  ],
+  '2025-09-26':[
+    {slot:'early', label:'早診', time:'08:30 ~ 11:30', doctor:'陳萬龍醫師', remain:9},
+    {slot:'noon',  label:'午診', time:'14:00 ~ 17:00', doctor:'陳萬龍醫師', remain:10},
+  ],
+  '2025-09-27':[
+    {slot:'early', label:'早診', time:'08:30 ~ 11:30', doctor:'陳萬龍醫師', remain:9},
+  ],
+  '2025-09-30':[
+    {slot:'early', label:'早診', time:'08:30 ~ 11:30', doctor:'陳萬龍醫師', remain:10},
+    {slot:'night', label:'晚診', time:'18:00 ~ 20:30', doctor:'陳萬龍醫師', remain:10},
+  ],
+};
+
+/* DOM */
+const $wd = document.getElementById('wdrow');
+const $days = document.getElementById('days');
+const $panel = document.getElementById('dayPanel');
+const $selDate = document.getElementById('selDateTxt');
+document.getElementById('nowTxt').textContent =
+  `今天日期：${NOW.getFullYear()}/${pad2(NOW.getMonth()+1)}/${pad2(NOW.getDate())}（週${W[NOW.getDay()]}）`;
+
+/* 畫週標 */
+$wd.innerHTML = W.map(w=>`<div class="wd">${w}</div>`).join('');
+
+/* 畫本月 */
+const curMonth = firstOfMonth(NOW);
+renderMonth(curMonth);
+
+function renderMonth(monthDate){
+  const first = firstOfMonth(monthDate), last = endOfMonth(monthDate);
+  const pad = first.getDay();
+  let html='';
+  for(let i=0;i<pad;i++) html+=`<div></div>`;
+  for(let d=1; d<=last.getDate(); d++){
+    const cur = new Date(first.getFullYear(),first.getMonth(),d);
+    const key = ymd(cur);
+    const inMonth = true;
+    const hasOpen = !!DAY_SLOTS[key];
+    const isToday = key===TODAY;
+    let cls = 'day' + (hasOpen ? ' clickable' : '') + (isToday ? ' today' : '');
+    let meta = '—';
+    if(hasOpen){
+      const pills = DAY_SLOTS[key].slice(0,2).map(s=>{
+        const c = s.slot==='early'?'early':s.slot==='noon'?'noon':s.slot==='night'?'night':'appt';
+        return `<span class="pill ${c}">${s.label}</span>`;
+      }).join(' ');
+      meta = pills || '—';
+    }
+    html += `<div class="${cls}" data-ymd="${key}">
+               <div class="d">${d}</div>
+               <div class="meta">${isToday?'—':meta}</div>
+             </div>`;
+  }
+  $days.innerHTML = html;
+  $days.querySelectorAll('.day.clickable').forEach(el=>{
+    el.addEventListener('click',()=>{
+      $days.querySelectorAll('.day').forEach(x=>x.style.outline='none');
+      el.style.outline='2px solid #cdbbff';
+      openDay(el.dataset.ymd);
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+    });
+  });
+}
+
+/* 展開當日 */
+function openDay(key){
+  const slots = DAY_SLOTS[key]||[];
+  $selDate.textContent = key ? `${key}` : '尚未選擇日期';
+  if(!slots.length){ $panel.hidden=true; return; }
+  let html = `<div class="muted" style="font-weight:900;margin:6px 2px 10px">${key}（星期${W[new Date(key).getDay()]}）</div>`;
+  html += `<div class="grid" style="grid-template-columns:1fr;gap:10px">`;
+  html += slots.map(s=>{
+    const cls = s.slot;
+    return `<div class="slot-card ${cls}" data-key="${key}" data-label="${s.label}" data-time="${s.time}" data-doc="${s.doctor}">
+              <div style="font-weight:900">${s.label}</div>
+              <div>${s.time} ［${s.doctor}］</div>
+              <div class="remain">剩餘 ${s.remain} 人</div>
+            </div>`;
+  }).join('');
+  html += `</div>`;
+  $panel.innerHTML = html;
+  $panel.hidden = false;
+
+  // 點選帶入表單（Demo）
+  $panel.querySelectorAll('.slot-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const t = `${card.dataset.key}｜${card.dataset.label} ${card.dataset.time} ［${card.dataset.doc}］`;
+      alert('Demo：已選擇\n'+t+'\n（實作時可寫到隱藏欄位）');
+    });
+  });
+}
+
+/* 送出（DEMO） */
+document.getElementById('submit').onclick=()=>{
+  const n=document.getElementById('name').value.trim();
+  const b=document.getElementById('birthday').value;
+  const i=document.getElementById('idnum').value.trim();
+  const p=document.getElementById('phone').value.trim();
+  const a=document.getElementById('agree').checked;
+  if(!n||!b||!i||!p||!a){ alert('資料未填完整'); return; }
+  alert('Demo：送出成功（此頁僅示意）');
+};
+</script>
+</body>
+</html>
