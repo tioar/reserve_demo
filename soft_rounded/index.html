@@ -1,126 +1,141 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>圓角友善風｜預約月曆</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>預約系統 — 圓角友善風</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;800;900&display=swap" rel="stylesheet">
+
 <style>
 :root{
-  --bg:#f7f6fb; --card:#fff; --ink:#20152f; --muted:#6b5f92; --line:#ebe6fb;
-  --accent:#6ab04c; --accent-2:#e8f1f4;
-  --pill-green:#e7f7ee; --pill-green-bd:#b8ead4; --pill-green-tx:#065f46;
-  --pill-amber:#fff3df; --pill-amber-bd:#ffd79a; --pill-amber-tx:#7a4d00;
-  --pill-blue:#e8f2ff; --pill-blue-bd:#cfe2ff; --pill-blue-tx:#1d4ed8;
-  --today:#4b5563; --today-ink:#fff;
-  --radius:20px; --softshadow:0 14px 28px rgba(98,54,167,.14);
-  --font:"Noto Sans TC","Microsoft JhengHei",system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
+  /* Calm it down (改柔和一點) */
+  --bg:#f7f6fb;
+  --ink:#2a1b3f;
+  --muted:#776a95;
+
+  --brand:#6a4bcc;
+  --brand-600:#5336a8;
+
+  --ok:#26a269;         /* 綠 pill */
+  --ok-ink:#065f46;
+  --pill-bg:#eef6ff;
+
+  --card:#fff;
+  --line:#ece8fb;
+
+  --today-bg:#6b7280;   /* 今天：深灰反白 */
+  --today-ink:#ffffff;
+
+  --radius-card:22px;
+  --radius-day:16px;
+  --radius-pill:999px;
+  --shadow:0 18px 36px rgba(106,75,204,.12);
 }
+
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font)}
-.wrap{max-width:1060px;margin:26px auto;padding:0 16px}
-.h1{font-weight:900;font-size:clamp(22px,3.2vw,32px);margin:6px 0 12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:var(--softshadow)}
-.section{padding:14px 16px}
-.rulebar{display:flex;gap:10px;align-items:center;padding:14px 16px}
-.now{font-weight:900;color:#4a2f82}
-.btn{border:none;background:#efe9ff;color:#4a2f82;font-weight:800;border-radius:999px;padding:.5rem .9rem}
-.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;padding:10px}
-.wday{font-size:.9rem;color:var(--muted);text-align:center;font-weight:800}
-.day{
-  border:1px solid #e6e8f0;border-radius:16px;min-height:92px;padding:8px;
-  background:#fff;display:flex;flex-direction:column;gap:6px;transition:.12s
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:"Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
 }
-.day.clickable{cursor:pointer}
-.day.clickable:hover{box-shadow:0 0 0 2px #d7caf6}
-.day.disabled{background:#f1f2f6;color:#8b90a3;border-color:#e5e7eb;opacity:.85}
-.day .d{font-weight:900}
-.day .meta{margin-top:auto;display:flex;flex-wrap:wrap;gap:6px}
-.day.today{background:var(--today);border-color:#374151}
+
+.wrap{max-width:1024px;margin:28px auto;padding:0 16px}
+.head{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;
+}
+.h1{font-size:clamp(28px,3.6vw,40px);font-weight:900;letter-spacing:.02em}
+
+.theme-note{font-weight:800;color:var(--muted)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-card);box-shadow:var(--shadow)}
+.section{padding:18px}
+
+.rulebar{display:flex;align-items:center;gap:10px;padding:10px 18px}
+#now{font-weight:900;color:var(--brand)}
+.btn{
+  border:none;border-radius:var(--radius-pill);background:#efe9ff;color:#4a2f82;
+  padding:.6rem 1.1rem;font-weight:800;cursor:pointer;
+}
+.btn:hover{background:#e5ddff}
+
+/* week / grid */
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:12px 14px}
+.w{font-size:.95rem;color:var(--muted);text-align:center;font-weight:800}
+.day{
+  background:#fff;border:1px solid #e8ebf5;border-radius:var(--radius-day);
+  min-height:96px;padding:10px;display:flex;flex-direction:column;gap:8px;transition:.15s;
+}
+.day:hover{box-shadow:0 0 0 3px #e9ddff}
+.d{font-weight:900}
+.meta{margin-top:auto;display:flex;gap:6px;flex-wrap:wrap;color:var(--muted)}
+.day.today{background:var(--today-bg);color:var(--today-ink);border-color:#4b5563}
 .day.today .d{color:var(--today-ink)}
-/* 圓角 pill */
-.pill{display:inline-flex;align-items:center;gap:.35rem;border-radius:999px;padding:.18rem .6rem;font-weight:900;border:1px solid}
-.pill.green{background:var(--pill-green);border-color:var(--pill-green-bd);color:var(--pill-green-tx)}
-.pill.amber{background:var(--pill-amber);border-color:var(--pill-amber-bd);color:var(--pill-amber-tx)}
-.pill.blue{background:var(--pill-blue);border-color:var(--pill-blue-bd);color:var(--pill-blue-tx)}
-/* 下方列表 */
-#panel{display:none;padding:12px 16px}
-.tile{border:1px solid #e0e4ef;border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center;margin-bottom:10px}
-.tile strong{font-weight:900}
-.tile .remain{margin-left:auto;color:#3b3f46}
+.day.today .meta{color:var(--today-ink)}
+/* “今天”只顯示「—」 */
+.day.today .meta::before{content:"—";}
+.day.today .meta > *{display:none}
+
+/* pill */
+.pill{display:inline-flex;align-items:center;gap:.35rem;border-radius:var(--radius-pill);
+  border:1px solid #dbe6ff;background:#eef4ff;color:#1d4ed8;font-weight:900;font-size:.92rem;padding:.24rem .65rem}
+.pill.ok{background:#e8f8ef;border-color:#cfeedd;color:var(--ok-ink)}
+.pill.warn{background:#fff4e6;border-color:#ffe1b6;color:#7a4d00}
+.pill.pink{background:#ffe7f0;border-color:#ffc7db;color:#b51695}
+
+/* responsive */
 @media (max-width:640px){
-  .day{min-height:78px;border-radius:12px}
-  .pill{display:block}
+  .grid{gap:6px}
+  .day{min-height:84px;border-radius:12px;padding:8px}
+  .pill{font-size:.84rem}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="h1">圓角友善風｜預約月曆</div>
+  <div class="head">
+    <div>
+      <div class="theme-note">主題：圓角友善風（Pastel / 柔和陰影 / 圓 pill）</div>
+      <div class="h1">線上預約（DEMO）</div>
+    </div>
+  </div>
 
   <div class="card">
     <div class="rulebar">
-      <span id="now" class="now"></span>
+      <div id="now"></div>
       <button class="btn">開放預約日期規則</button>
     </div>
+    <div class="grid">
+      <!-- week -->
+      <div class="w">日</div><div class="w">一</div><div class="w">二</div><div class="w">三</div><div class="w">四</div><div class="w">五</div><div class="w">六</div>
+      <!-- days (示意) -->
+      <div class="day"><div class="d">1</div><div class="meta">—</div></div>
+      <div class="day"><div class="d">2</div><div class="meta"><span class="pill ok">早診 剩8人</span></div></div>
+      <div class="day today"><div class="d">3</div><div class="meta"><span class="pill">今天</span></div></div>
+      <div class="day"><div class="d">4</div><div class="meta"><span class="pill warn">午診 剩10人</span></div></div>
+      <div class="day"><div class="d">5</div><div class="meta"><span class="pill pink">約診 剩20人</span></div></div>
+      <div class="day"><div class="d">6</div><div class="meta">—</div></div>
+      <div class="day"><div class="d">7</div><div class="meta">—</div></div>
 
-    <div class="grid" id="whead"></div>
-    <div class="grid" id="days"></div>
-    <div id="panel"></div>
+      <div class="day"><div class="d">8</div><div class="meta"><span class="pill ok">早診 剩9人</span></div></div>
+      <div class="day"><div class="d">9</div><div class="meta"><span class="pill">晚診 剩9人</span></div></div>
+      <div class="day"><div class="d">10</div><div class="meta">—</div></div>
+      <div class="day"><div class="d">11</div><div class="meta">—</div></div>
+      <div class="day"><div class="d">12</div><div class="meta"><span class="pill warn">午診 剩8人</span></div></div>
+      <div class="day"><div class="d">13</div><div class="meta">—</div></div>
+      <div class="day"><div class="d">14</div><div class="meta">—</div></div>
+      <!-- 其餘省略：示意 -->
+    </div>
   </div>
 </div>
 
 <script>
-const W=['日','一','二','三','四','五','六'];
-function pad2(n){return String(n).padStart(2,'0')}
-function nowTxt(){const d=new Date();return `現在時間：${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())}（週${W[d.getDay()]}）`}
-document.getElementById('now').textContent=nowTxt();
-
-const $whead=document.getElementById('whead');$whead.innerHTML=W.map(w=>`<div class="wday">${w}</div>`).join('');
-
-const $days=document.getElementById('days'); const $panel=document.getElementById('panel');
-const base=new Date(); base.setDate(1);
-const todayKey=[base.getFullYear(),pad2(new Date().getMonth()+1),pad2(new Date().getDate())].join('-');
-
-function ymd(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`}
-function render(){
-  const first=new Date(base.getFullYear(),base.getMonth(),1);
-  const last=new Date(base.getFullYear(),base.getMonth()+1,0);
-  let html=''; for(let i=0;i<first.getDay();i++) html+=`<div></div>`;
-  for(let dd=1;dd<=last.getDate();dd++){
-    const cur=new Date(base.getFullYear(),base.getMonth(),dd);
-    const key=ymd(cur); const isToday=(key===todayKey);
-    const open = dd>=23 && dd<=27; // demo：23~27 可預約
-    let meta='—', cls='day';
-    if(isToday) cls+=' today';
-    if(open){
-      const pills = [
-        `<span class="pill green">早診 剩餘 ${Math.max(0,10-(dd%4))} 人</span>`,
-        `<span class="pill amber">午診 剩餘 10 人</span>`,
-        `<span class="pill blue">晚診 剩餘 9 人</span>`
-      ].join(' ');
-      meta = pills; cls+=' clickable';
-    }else{
-      cls+=' disabled';
-    }
-    html += `<div class="${cls}" data-key="${key}"><div class="d">${dd}</div><div class="meta">${meta}</div></div>`;
-  }
-  $days.innerHTML=html;
-  $days.querySelectorAll('.day.clickable').forEach(el=>{
-    el.addEventListener('click',()=>{
-      const key=el.dataset.key; openDay(key);
-    });
-  });
-}
-function openDay(key){
-  const d=new Date(key); const wd=W[d.getDay()];
-  $panel.style.display='block';
-  $panel.innerHTML = `
-    <div class="tile"><strong>${key}（週${wd}） 早診</strong><span>08:30~11:30</span><span class="remain">剩餘 7 人</span></div>
-    <div class="tile"><strong>${key}（週${wd}） 午診</strong><span>14:00~17:00</span><span class="remain">剩餘 10 人</span></div>
-    <div class="tile"><strong>${key}（週${wd}） 晚診</strong><span>18:00~20:30</span><span class="remain">剩餘 9 人</span></div>
-  `;
-}
-render();
+const w = ["日","一","二","三","四","五","六"];
+const d = new Date();
+document.getElementById("now").textContent =
+  `現在時間：${d.getFullYear()}/${(d.getMonth()+1+'').padStart(2,'0')}/${(d.getDate()+'').padStart(2,'0')}（週${w[d.getDay()]}）`;
 </script>
 </body>
 </html>
